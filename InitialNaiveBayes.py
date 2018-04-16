@@ -9,7 +9,7 @@ from sklearn.cross_validation import train_test_split
 import difflib
 from sklearn.naive_bayes import MultinomialNB
 from sklearn import svm
-#import xgboost as xgb
+import xgboost as xgb
 
 stops = set(stopwords.words("english"))
 train = pd.read_csv('Input/train.csv')[:10000]
@@ -112,7 +112,9 @@ def naive_bayes(x_train, y_train, x_valid, y_valid):
     for i in range(len(y_valid)):
         if y_valid.data[i] == y_pred[i]:
             k+=1
-    retutn (float(k)/float(len(y_valid)))
+    del clf
+    del y_pred
+    return (float(k)/float(len(y_valid)))
 
 def xgboost(x_train, y_train, x_valid, y_valid):
     params = {}
@@ -129,15 +131,17 @@ def xgboost(x_train, y_train, x_valid, y_valid):
 
     d_train = xgb.DMatrix(x_train, label=y_train)
     d_valid = xgb.DMatrix(x_valid, label=y_valid)
-    watchlist = [(d_train, 'train'), (d_valid, 'valid')]
+    watchlist = [(d_train, 'train')]
     bst = xgb.train(params, d_train, 500, watchlist, early_stopping_rounds=50, verbose_eval=100)
     sub = pd.DataFrame()
     sub['is_duplicate'] = bst.predict(d_valid)
     k = 0
     for i in range(len(y_valid)):
-        if y_valid.data[i] == sub["is_duplicate"][i]:
+        if y_valid.data[i] == int(sub["is_duplicate"][i]+0.5):
             k += 1
-    retutn(float(k) / float(len(y_valid)))
+    del clf
+    del y_pred
+    return(float(k) / float(len(y_valid)))
 
 def svm_model(x_train, y_train, x_valid, y_valid):
     clf = svm.SVC(C=1000)
@@ -147,10 +151,20 @@ def svm_model(x_train, y_train, x_valid, y_valid):
     for i in range(len(y_valid)):
         if y_valid.data[i] == y_pred[i]:
             k += 1
+    del clf
+    del y_pred
     return(float(k) / float(len(y_valid)))
 
 
 x_train, x_valid, y_train, y_valid = train_test_split(train[col], train['is_duplicate'], test_size=0.4, random_state=0)
-#accuracy = naive_bayes(x_train, y_train, x_valid, y_valid)
-accuracy = svm_model(x_train, y_train, x_valid, y_valid)
+accuracy = naive_bayes(x_train, y_train, x_valid, y_valid)
+#accuracy = svm_model(x_train, y_train, x_valid, y_valid)
+#accuracy = xgboost(x_train, y_train, x_valid, y_valid)
 print (accuracy)
+del train
+del pos_train
+del neg_train
+del x_train
+del y_train
+del x_valid
+del y_valid
