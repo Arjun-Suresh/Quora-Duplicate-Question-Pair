@@ -41,14 +41,15 @@ def xgboost_classifier(x_train, y_train, x_valid, y_valid):
     bst = xgb.train(params, d_train, 500, watchlist, early_stopping_rounds=50, verbose_eval=100)
     sub = pd.DataFrame()
     sub['is_duplicate'] = bst.predict(d_valid)
-    plt.rcParams['figure.figsize'] = (7.0, 7.0)
-    xgb.plot_importance(bst)
-    plt.show()
+    #plt.rcParams['figure.figsize'] = (7.0, 7.0)
+    #xgb.plot_importance(bst)
+    #plt.show()
     k = 0
     for i in range(len(y_valid)):
         if y_valid.data[i] == int(sub["is_duplicate"][i]+0.5):
             k += 1
-    return float(k) / float(len(y_valid))
+    return (float(k) / float(len(y_valid)))
+
 
 def svm_classifier(x_train, y_train, x_valid, y_valid):
     clf = svm.SVC(C=1000)
@@ -74,25 +75,24 @@ def rebalanceClasses(train):
     return train
 
 
-def main(train_file, test_file, classifierType):
-    featureExtracter = feature_extracter(train_file, test_file)
-    train = pd.read_csv(train_file)[:10000]
-    test = pd.read_csv(test_file)[:10000]
+def main(train_file, classifierType):
+    featureExtracter = feature_extracter(train_file)
+    train = pd.read_csv(train_file)
     train = featureExtracter.get_features(train)
     col = [c for c in train.columns if c[:1] == 'z']
     train = rebalanceClasses(train)
     x_train, x_valid, y_train, y_valid = train_test_split(train[col], train['is_duplicate'], test_size=0.4, random_state=0)
-    if classifierType == 0:
-        accuracy = naive_bayes(x_train, y_train, x_valid, y_valid)
-    elif classifierType == 1:
-        accuracy = svm_model(x_train, y_train, x_valid, y_valid)
-    else:
-        accuracy = xgboost(x_train, y_train, x_valid, y_valid)
+    if int(classifierType) == 1:
+        accuracy = naive_bayes_classifier(x_train, y_train, x_valid, y_valid)
+    elif int(classifierType) == 3:
+        accuracy = svm_classifier(x_train, y_train, x_valid, y_valid)
+    elif int(classifierType) == 2:
+        accuracy = xgboost_classifier(x_train, y_train, x_valid, y_valid)
     print (accuracy)
 
 
 if __name__ == '__main__':
-    if (len(sys.argv) != 4):
-        print ('usage:\tClassifier.py <train_file> <test_file> <classifierType (1 for Naive Bayes, 2 for XGBoost, 3 for SVM)>')
+    if (len(sys.argv) != 3):
+        print ('usage:\tClassifier.py <train_file> <classifierType (1 for Naive Bayes, 2 for XGBoost, 3 for SVM)>')
         sys.exit(0)
-    main(sys.argv[1],sys.argv[2], sys.argv[3])
+    main(sys.argv[1],sys.argv[2])

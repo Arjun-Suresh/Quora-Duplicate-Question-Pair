@@ -9,14 +9,12 @@ import difflib
 
 class feature_extracter:
 
-    def __init__(self, trainFile, testFile):
+    def __init__(self, trainFile):
         self.stops = set(stopwords.words("english"))
-        self.tfidf = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
+        self.tfidf = TfidfVectorizer(stop_words='english', ngram_range=(1, 1))
         self.train = pd.read_csv('Input/train.csv')
-        self.test = pd.read_csv('Input/test.csv')
         self.tfidf_txt = pd.Series(
-            self.train['question1'].tolist() + self.train['question2'].tolist() + self.test['question1'].tolist() + self.test[
-                'question2'].tolist()).astype(str)
+            self.train['question1'].tolist() + self.train['question2'].tolist()).astype(str)
         self.tfidf.fit_transform(self.tfidf_txt)
 
 
@@ -55,8 +53,8 @@ class feature_extracter:
                 q2words[word] = 1
         if len(q1words) == 0 or len(q2words) == 0:
             return 0
-        q1_tfidf = tfidf.transform([" ".join(q1words.keys())])
-        q2_tfidf = tfidf.transform([" ".join(q2words.keys())])
+        q1_tfidf = self.tfidf.transform([" ".join(q1words.keys())])
+        q2_tfidf = self.tfidf.transform([" ".join(q2words.keys())])
         inter = np.intersect1d(q1_tfidf.indices, q2_tfidf.indices)
         shared_weights = 0
         for word_index in inter:
