@@ -35,18 +35,18 @@ def xgboost_classifier(x_train, y_train, x_valid, y_valid):
     params["silent"] = 1
     params["seed"] = 1632
 
-    d_train = xgb.DMatrix(x_train, label=y_train)
-    d_valid = xgb.DMatrix(x_valid, label=y_valid)
-    watchlist = [(d_train, 'train')]
-    bst = xgb.train(params, d_train, 500, watchlist, early_stopping_rounds=50, verbose_eval=100)
-    sub = pd.DataFrame()
-    sub['is_duplicate'] = bst.predict(d_valid)
+    training_matrix = xgb.DMatrix(x_train, label=y_train)
+    watchlist = [(training_matrix, 'train')]
+    boost = xgb.train(params, training_matrix, 500, watchlist, early_stopping_rounds=50, verbose_eval=100)
+    prediction = pd.DataFrame()
+    test_matrix = xgb.DMatrix(x_valid, label=y_valid)
+    prediction['is_duplicate'] = boost.predict(test_matrix)
     #plt.rcParams['figure.figsize'] = (7.0, 7.0)
     #xgb.plot_importance(bst)
     #plt.show()
     k = 0
     for i in range(len(y_valid)):
-        if y_valid.data[i] == int(sub["is_duplicate"][i]+0.5):
+        if y_valid.data[i] == int(prediction["is_duplicate"][i]+0.5):
             k += 1
     return (float(k) / float(len(y_valid)))
 
@@ -76,8 +76,9 @@ def rebalanceClasses(train):
 
 
 def main(train_file, classifierType):
-    featureExtracter = feature_extracter(train_file)
     train = pd.read_csv(train_file)
+    train = feature_extracter.preprocess(train)
+    featureExtracter = feature_extracter(train)
     train = featureExtracter.get_features(train)
     col = [c for c in train.columns if c[:1] == 'z']
     train = rebalanceClasses(train)

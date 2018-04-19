@@ -5,18 +5,30 @@ from collections import Counter
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import difflib
-
+import sys
+sys.path.append('//Data_Preprocessor.py')
+import Data_Preprocessor
 
 class feature_extracter:
 
-    def __init__(self, trainFile):
+    def __init__(self, train):
         self.stops = set(stopwords.words("english"))
         self.tfidf = TfidfVectorizer(stop_words='english', ngram_range=(1, 1))
-        self.train = pd.read_csv('Input/train.csv')
         self.tfidf_txt = pd.Series(
-            self.train['question1'].tolist() + self.train['question2'].tolist()).astype(str)
+            train['question1'].tolist() + train['question2'].tolist()).astype(str)
         self.tfidf.fit_transform(self.tfidf_txt)
 
+    def preprocess(train):
+        question1List=[]
+        question2List=[]
+        for counter in range(len(train["question1"])):
+            question1List.append(Data_Preprocessor.cleanup(train["question1"][counter]))
+            question2List.append(Data_Preprocessor.cleanup(train["question2"][counter]))
+        series1 = pd.Series(question1List)
+        series2 = pd.Series(question2List)
+        train["question1"]=series1
+        train["question2"]=series2
+        return train
 
     def diff_ratios(self, st1, st2):
         seq = difflib.SequenceMatcher()
@@ -65,20 +77,20 @@ class feature_extracter:
 
 
     def get_features(self, df_features):
-        print('nouns...')
+        print('Procesing nouns...')
         df_features['question1_nouns'] = df_features.question1.map(lambda x: [w for w, t in nltk.pos_tag(nltk.word_tokenize(str(x).lower())) if t[:1] in ['N']])
         df_features['question2_nouns'] = df_features.question2.map(lambda x: [w for w, t in nltk.pos_tag(nltk.word_tokenize(str(x).lower())) if t[:1] in ['N']])
-        df_features['z_noun_match'] = df_features.apply(lambda r: sum([1 for w in r.question1_nouns if w in r.question2_nouns]), axis=1)  #takes long
-        print('lengths...')
+        df_features['z_noun_match'] = df_features.apply(lambda r: sum([1 for w in r.question1_nouns if w in r.question2_nouns]), axis=1)
+        print('Processing lengths...')
         df_features['z_len1'] = df_features.question1.map(lambda x: len(str(x)))
         df_features['z_len2'] = df_features.question2.map(lambda x: len(str(x)))
         df_features['z_word_len1'] = df_features.question1.map(lambda x: len(str(x).split()))
         df_features['z_word_len2'] = df_features.question2.map(lambda x: len(str(x).split()))
-        print('difflib...')
+        print('Processing difflib...')
         df_features['z_match_ratio'] = df_features.apply(lambda r: self.diff_ratios(r.question1, r.question2), axis=1)  #takes long
         print('word match...')
         df_features['z_word_match'] = df_features.apply(self.word_match_share, axis=1, raw=True)
-        print('tfidf...')
+        print('Processing tfidf...')
         df_features['z_tfidf_sum1'] = df_features.question1.map(lambda x: np.sum(self.tfidf.transform([str(x)]).data))
         df_features['z_tfidf_sum2'] = df_features.question2.map(lambda x: np.sum(self.tfidf.transform([str(x)]).data))
         df_features['z_tfidf_mean1'] = df_features.question1.map(lambda x: np.mean(self.tfidf.transform([str(x)]).data))
@@ -86,4 +98,6 @@ class feature_extracter:
         df_features['z_tfidf_len1'] = df_features.question1.map(lambda x: len(self.tfidf.transform([str(x)]).data))
         df_features['z_tfidf_len2'] = df_features.question2.map(lambda x: len(self.tfidf.transform([str(x)]).data))
         df_features['z_tfidf_share'] = df_features.apply(self.tfidf_word_match_share, axis=1, raw=True)
+        print('Processing Named Entities...')
+        df_features['z_ner_match'] = df_features.apply(Data_Preprocessor.namedEntityMatch, axis=1, raw=True)
         return df_features.fillna(0.0)
