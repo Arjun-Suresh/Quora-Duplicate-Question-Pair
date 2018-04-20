@@ -1,5 +1,6 @@
 # Quora-Duplicate-Question-Pair
 * The application is written in Python 3.4.
+* The code includes data cleanup, feature extraction and classification using Naive Bayes, SVM and XGBoost algorithms.
 * It uses the following external libraries:
   * nltk
   * pandas
