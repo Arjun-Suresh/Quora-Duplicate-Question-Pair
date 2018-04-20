@@ -14,4 +14,4 @@
 • The dataset is present in the input folder as train.csv file.\
 • The application can be run as “python Classifier.py Input\train.csv 1”.\
   ❖ The first parameter is the location of the dataset.\
-  ❖ The second parameter refers to the model: 1 for naïve bayes, 2 for XGBoost and 3 for svm.\
+  ❖ The second parameter refers to the model: 1 for naïve bayes, 2 for XGBoost and 3 for svm.
